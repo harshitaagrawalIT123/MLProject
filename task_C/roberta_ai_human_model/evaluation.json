@@ -1,0 +1,33 @@
+{
+  "ai_probability_cutoff": 0.8,
+  "cutoff_selected_using": "validation participants",
+  "test_participants": 24,
+  "test_sentences": 1895,
+  "metrics": {
+    "Human": {
+      "precision": 0.8296943231441049,
+      "recall": 0.7786885245901639,
+      "f1-score": 0.8033826638477801,
+      "support": 488.0
+    },
+    "AI": {
+      "precision": 0.9248434237995825,
+      "recall": 0.9445628997867804,
+      "f1-score": 0.9345991561181435,
+      "support": 1407.0
+    },
+    "accuracy": 0.9018469656992084,
+    "macro avg": {
+      "precision": 0.8772688734718437,
+      "recall": 0.8616257121884722,
+      "f1-score": 0.8689909099829618,
+      "support": 1895.0
+    },
+    "weighted avg": {
+      "precision": 0.9003406474830268,
+      "recall": 0.9018469656992084,
+      "f1-score": 0.9008083127260922,
+      "support": 1895.0
+    }
+  }
+}
