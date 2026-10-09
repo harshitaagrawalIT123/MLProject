@@ -1,0 +1,7 @@
+{
+  "intercept": -10.66622403022258,
+  "slope": 1.085563646157174,
+  "score_used": "pred_wordweighted_ai",
+  "cutoff": 0.8,
+  "fitted_on": "12 validation participants"
+}

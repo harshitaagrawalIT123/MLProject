@@ -1,0 +1,10 @@
+documents,prediction,MAE,RMSE,r
+all test docs,raw,11.811,20.442,0.903
+all test docs,calibrated,10.747,18.965,0.908
+all test docs,dumb (always the mean),42.06,44.796,
+post-edited only,raw,8.124,13.702,0.799
+post-edited only,calibrated,9.182,14.317,0.796
+post-edited only,dumb (always the mean),32.791,34.262,-0.0
+control only,raw,19.186,29.633,
+control only,calibrated,13.877,25.866,
+control only,dumb (always the mean),60.598,60.598,
