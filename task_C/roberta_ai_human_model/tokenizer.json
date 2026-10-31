@@ -50,7 +50,7 @@
       "single_word": false,
       "lstrip": true,
       "rstrip": false,
-      "normalized": true,
+      "normalized": false,
       "special": true
     }
   ],
