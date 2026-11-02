@@ -1,0 +1,6 @@
+model,R2_out_of_sample
+A  edit amount (WER),0.329
+B  edit count,0.266
+C  process only,0.213
+D  WER + process,0.265
+E  edit count + process,0.242

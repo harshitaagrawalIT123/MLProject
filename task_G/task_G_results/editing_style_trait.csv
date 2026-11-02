@@ -1,0 +1,8 @@
+behaviour,people,ICC,CI_low,CI_high,strength,history_gain,gain_low,gain_high
+edit amount (WER),77,0.539,0.31,0.74,strong,0.413,0.125,0.698
+share of sentences touched,77,0.581,0.403,0.711,strong,0.471,0.238,0.653
+edit events (count),77,0.568,0.433,0.668,strong,0.369,0.142,0.54
+time to first edit,73,0.32,0.162,0.465,moderate,0.058,-0.168,0.265
+active editing time,77,0.457,0.311,0.582,moderate,0.214,-0.0,0.417
+edit speed,77,0.535,0.232,0.721,strong,0.337,-0.075,0.605
+editing bursts,77,0.537,0.402,0.64,strong,0.392,0.211,0.547
