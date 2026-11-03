@@ -11,7 +11,7 @@ tell. The authors released data but no code or tools. This repository adds:
    and a document-level "% still from the LLM draft" estimator (E).
 3. **A style-conditioned drafting pipeline** (D) — built, real-generation evaluation still pending.
 
-## Team
+## Team - AI Humanizers
 
 | Member | Roll no. | Modules |
 |---|---|---|
