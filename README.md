@@ -15,9 +15,9 @@ tell. The authors released data but no code or tools. This repository adds:
 
 | Member | Roll no. | Modules |
 |---|---|---|
-| Dange Pooja Sanjay | B24DS006 | A1, B, E |
+| Dange Pooja Sanjay | B24DS006 | A1, E , G|
 | Samarth Goyal | B24DS026 | A3, C, D |
-| Harshita Agrawal | B24DS501 | A2, B, D |
+| Harshita Agrawal | B24DS501 | A2, B, D , H|
 
 ## Dataset
 
