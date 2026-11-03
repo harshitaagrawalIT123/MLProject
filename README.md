@@ -19,20 +19,6 @@ tell. The authors released data but no code or tools. This repository adds:
 | Samarth Goyal | B24DS026 | A3, C, D |
 | Harshita Agrawal | B24DS501 | A2, B, D |
 
-## Results at a glance
-
-| Module | Question | Main result |
-|---|---|---|
-| **A1** | Does LUAR similarity depend on document length or on how much was edited? | Edit amount (WER) predicts self-similarity (β = 0.105, p < .001; repeated-measures r = 0.32). Length does not (β = 0.0002, p = .19). LUAR scores also rise with input size: 0.61 at 20 words → about 0.73 (60-word chunks) or 0.78 (30-word chunks) at 100 words. |
-| **A2** | Do writers with richer vocabulary need less editing or improve more? | No evidence. No vocabulary metric (TTR, MTLD, Yule's K) is significant after Holm correction. Closest: MTLD vs editing effort, ρ = 0.20, p(Holm) = .43. |
-| **A3** | Does the paper's H1a gain replicate on a participant-disjoint split? | Not with our baseline pipeline: mean Δ self-similarity = −0.026 (median −0.023), 40 of 57 participants negative. Suggests the effect is sensitive to how texts are embedded. |
-| **B** | Can we rank which sentences a given user would edit? | New users: AUROC 0.555 vs 0.503 random. Returning users: personalized 0.820 vs 0.530 non-personalized; P@3 0.368 vs 0.364, so the within-document gain is small. |
-| **C** | Can we flag AI-sounding sentences? | RoBERTa-base on 24 unseen participants (1,895 sentences): accuracy 0.90, macro-F1 0.87 (human F1 0.80, AI F1 0.93). |
-| **D** | Is a style-conditioned draft closer to the user's style than a zero-shot draft? | Pipeline built and tested end to end. **Evaluation on real LLM generations is pending; no result yet.** |
-| **E** | What % of a finished document still comes from the LLM draft? | Post-edited test docs: MAE 8.1 points (95% CI 5.8–10.8), r = 0.80. Guessing the post-edited average gives 13.7; guessing the overall average gives 32.8. Human-only docs are still scored about 19% AI. |
-
-These are small-sample results (81 participants, one LLM). Negative and small results are reported as they are.
-
 ## Dataset
 
 The 81 participant logs are from the original study
@@ -189,6 +175,7 @@ placeholder embedders and a fake generator to check the code runs. **They have n
 Error is small for lightly edited documents (about 4 points when over 95% of the text is from the draft) and large for heavily
 edited ones (about 23 points when under 50%, only 9 test documents). Raw scores are slightly better than calibrated ones on post-edited
 text; calibration mainly reduces over-flagging of human-only text (error 19.2 → 13.9). Treat the % as a rough estimate, not as proof of AI use.
+
 
 ## Limitations
 
