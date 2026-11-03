@@ -80,117 +80,32 @@ git clone https://github.com/harshitaagrawalIT123/MLProject
 
 Some notebooks contain a hard-coded local path near the top (for example `path = r"D:\..."` in Module C).
 Change it to your local folder before running. A GPU is helpful for C and D; A, B and E's analysis
+
+## Summary Pipeline
+
+1. **Ingest the released dataset.** Load control, LLM-draft and post-edited text for every participant and task, plus the keystroke logs (`logs/`). Participants are split by person into 57 train and 24 held-out test (the 57 are further split into 45 train and 12 validation).
+
+2. **Module A: statistical diagnostics (A1, A2, A3).**
+   - **A1, similarity vs. length:** Editing amount (WER) is a stronger predictor of style shift than document length. Repeated-measures correlation: WER vs. self-similarity r = 0.316, vs. LLM-similarity r = -0.700 (both p < .001). Length has no clear independent effect on self-similarity (β = 0.0002, p = .19) while WER does (β = 0.105, p < .001). LUAR scores rise with the number of input chunks, so short-span scores are not comparable with document-level scores.
+   - **A2, vocabulary diversity:** TTR, MTLD and Yule's K show no significant link with editing effort or similarity improvement (N = 81, Holm-corrected, including partial correlations controlling for token count).
+   - **A3, held-out validation:** After fixing the paired draft-vs-final comparison, the mean similarity-to-own-style change on the 57 training participants is +0.054 (55/57 positive). On the 24 held-out participants it is +0.045 (22/24 positive, Wilcoxon p ≈ 4e-5), consistent with the paper's H1a.
+
+3. **Module C: AI-content classifier.** Fine-tune RoBERTa on labeled pairs, with the AI-probability cutoff (0.80) chosen on validation participants. On the 24 test participants (1,895 sentences): accuracy 0.921, AI-class F1 0.948 (recall 0.967), human-class F1 0.838 (recall 0.791). It also underlies Module E.
+
+4. **Modules B and C: interactive editing tool.** Recommendations, live feedback and process logging, piloted on volunteer writers performing the paper's own tasks.
+   - **Module B (offline evaluation of "which sentences get edited"):** On participant-disjoint data the non-personalized model reaches AUROC 0.555 against 0.503 for random, so it adds little. With a warm start (some of the user's own history), the personalized model reaches AUROC 0.820 against 0.530 non-personalized; P@3 barely moves (0.368 vs. 0.364). A 30-word AI lexicon is derived from word-removal rates.
+   - **Module E (document-level AI score from Module C):** On 24 test participants (144 documents), the calibrated estimate of "% still from the LLM draft" has MAE 9.0 points on all documents (always guessing the mean: 42.1), r = 0.94 overall and 0.84 on post-edited documents. Calibration cuts the false-alarm bias on human-written text from 16.5% to 10.8%. Sentence-level AUROC for copied vs. rewritten text is 0.949.
+
+5. **Module D: style-conditioned generation.** Reduce the editing burden at the source by conditioning generation on the writer's style. Arms compared: plain baseline, zero-shot, RAG with random / attention / rerank retrieval, and a style card (24 participants, 192 items). Similarity to the writer's own reference text (LUAR) improves over the baseline most with `rag_random` (+0.030, Holm p = 0.011). Other arms are smaller or not significant, and the style card does not improve LUAR (`luar_ref`) similarity. The generated text's AI-ness rate drops from about 5.2 (baseline) to about 2.8–3.2 for all personalized arms.
+
+6. **Module G: edit-process analysis.** Replay the released keystroke logs (about 216,000 edit events over 486 tasks from 81 participants) to reconstruct how people edit an LLM draft. No new data collection is needed. Replay rebuilds the final text exactly for 296 of 324 tasks (26 more match except for spaces).
+   - **Speed:** about 41 s before the first edit, about 100 s of active editing, about 83 characters per minute in about 7 short bursts, touching about 22% of sentences.
+   - **Order:** people edit top to bottom (median rank correlation 1.0, 90% of tasks above 0). Module C's sentence flags do not predict what gets fixed first, because Module C scores almost every draft sentence about 0.95.
+   - **Prediction:** edit amount (WER) alone explains the most style recovery (out-of-sample R² = 0.33). Process features add nothing measurable.
+   - **Personal style:** how much people edit is a stable personal habit (ICC about 0.54), while how soon they start is not (0.32).
+
+   Findings feed back into the design of Modules B, C and D.
+
+7. **Evaluation.** Evaluate all modules against the paper's original H1, H2 and H3 metrics to test whether the gaps they report shrink.
 parts run on a CPU, though embedding with LUAR and scoring sentences with RoBERTa is slow without one.
 
-## Modules
-
-### A1 – Similarity vs. length and edit amount
-*Notebook:* `task_A1/2_A1_similarity_vs_length.ipynb`
-
-- **Edit amount** = word error rate (WER) between the LLM draft and the final text (`jiwer`); `words_changed` is the same as a raw count.
-- **Embeddings:** LUAR-CRUD, texts cut into 60-word chunks. A person's own style is the average vector of their two control texts.
-- **Scores:** `self_sim` (final text vs own control profile) and `llm_sim` (final text vs the original LLM draft).
-- **Statistics:** Pearson/Spearman, repeated-measures correlation (`pingouin`), and OLS `self_sim ~ n_words + wer + scenario` with errors clustered by participant.
-- **Truncation test:** keep the first 20/40/60/80/100 words of each text and re-score, with 60-word and 30-word chunks.
-- **Caveats:** documents are all about 160 words (SD 22), so there is little length variation to detect an effect. `llm_sim` falling with WER is partly mechanical. The result is a correlation, not a causal claim.
-
-### A2 – Similarity vs. vocabulary richness
-*Script:* `task_A2/a2.py` (`python a2.py --data logs --out results [--no-luar]`)
-
-Computes TTR, MTLD and Yule's K on each participant's control writing and correlates them with
-(i) similarity improvement after editing and (ii) editing effort (WER), using Spearman correlation with bootstrap
-confidence intervals (5,000 resamples), partial correlations and Holm correction. Embeddings: LUAR-MUD.
-Outputs: `A2_correlations.csv`, `A2_partial_correlations.csv`, `A2_participant_level.csv`, `A2_response_level.csv`.
-With 81 participants and strict correction, "no significant effect" does not prove there is none.
-
-### A3 – Held-out validation of the paper's H1a
-*Notebook:* `task_A3/taskA3_reproduce_baseline.ipynb`
-
-For each participant, a reference style vector is built from the two control texts (concatenated). For each of the
-four treatment documents we compute `similarity(final, reference) − similarity(LLM draft, reference)` with LUAR-MUD.
-A positive value means the editing moved the text toward the person's own writing. Result: mean −0.026, 17 positive and
-40 negative of the 57 fit-set participants. This is *our baseline pipeline's* result, not proof that the paper is wrong;
-differences in chunking and embedding setup likely matter. A1 and A3/A2 use different LUAR checkpoints (CRUD vs MUD)
-and different ways of building the control profile, which is worth checking in any follow-up.
-
-### B – Personalized edit recommendation
-*Files:* `task_B/B.py`, `task_B/moduleB.py`, `task_B/task_B.ipynb`
-
-```bash
-cd task_B
-python B.py --data logs --out lexicon                      # build the AI-word lexicon
-python moduleB.py --data logs --out results_b --lexicon lexicon/ai_lexicon.txt
-```
-
-1. Align each draft sentence with the final text using `difflib`. A sentence counts as **edited** if its similarity ratio falls below 0.90 (677 of 3,435 draft sentences, 19.7%).
-2. Label edit types by rules: em dash removed, contraction added, shortened, AI word removed, simplified words, first person added, exclamation added, rewritten, and so on.
-3. Build a data-driven **AI lexicon** (31 words): words much more frequent in LLM drafts than in control writing (log-odds with a prior), kept only if seen across several participants and scenarios.
-4. Build a **per-user edit profile** (how often each user makes each edit type) and cluster editors with k-means.
-5. Train a balanced logistic regression. The personalized model adds "sentence trigger × user habit" features and the user's overall edit rate.
-6. Evaluate two ways: **participant-disjoint** (new users, grouped cross-validation) and **warm start** (the same person appears in train and test, but a test document's profile is built only from that person's other documents).
-
-Metrics: AUROC, P@3, Recall@3, NDCG@3. The AUROC gain for returning users is large, but P@3 barely moves. The
-personalized features include the user's overall edit rate, so much of the AUROC gain likely reflects *who edits a lot*
-rather than *which sentence to edit*. `recommend()` in `moduleB.py` returns ranked sentences with suggestions.
-
-### C – Sentence-level AI-likeness classifier
-*Notebook:* `task_C/taskC_ai_likenes_feedback.ipynb`
-
-- **Data:** 4,441 sentences from the 57 fit participants. AI (label 1) = sentences of the LLM drafts (3,339); human (label 0) = sentences of the participants' control writing (1,102).
-- **Model:** `roberta-base`, sequence classification, class-weighted loss (human class weighted about 2.0 vs about 0.67 for AI), max 128 tokens. 45 train / 12 validation participants.
-- **Cutoff:** 0.80 AI probability, chosen on validation participants and applied once to the test set.
-- **Test (24 unseen participants, 1,895 sentences):** accuracy 0.90, macro-F1 0.87; confusion matrix (human, AI) = [[380, 108], [78, 1329]].
-- **Note:** 74% of test sentences are AI, so always predicting "AI" would score about 74% accuracy. Use macro-F1 and per-class F1. About 22% of human sentences are flagged as AI.
-- The model was trained on pure LLM vs pure human text. Its behaviour on post-edited text is tested in Module E (section 10).
-- Not implemented: the browser red/yellow/green heat-map interface, training on RAID/HC3, and testing other LLMs. The sentence probabilities are what such an interface would use.
-
-### D – Cross-topic, attention-based style capture and style-conditioned drafting
-*Files (to add under `task_D/`):* `ModuleD.py`, `Dencoder.py`
-
-Question: if a draft is conditioned on the user's own writing on a *different* topic, is the **unedited** draft already closer to their style than a zero-shot draft?
-
-- **Setup:** per participant, one control text is the style *source* and the other control text is the held-out *reference* used only for scoring (both directions used). The target topic differs from both.
-- **Style encoder:** parameter-free scaled dot-product attention over sentence embeddings, plus an optional trained encoder (one Transformer layer, learned-query attention pooling, contrastive loss: same author on different topics = positive pair). `Dencoder.py` trains and evaluates it with participant-disjoint retrieval metrics.
-- **Arms (same generator, only conditioning differs):** `zero_shot`, `style_card` (measured stylometric description), `rag_attn` (source sentences picked by attention), `rag_random` (ablation: random sentences), `rag_rerank` (best of several candidates), optional `rag_edit` (uses Module B edit habits). The paper's own GPT-o4-mini draft is a reference baseline.
-- **Scoring:** LUAR cosine to the held-out control text (primary), plus CISR cosine, stylometric distance and distance to the user's final text.
-
-```bash
-python ModuleD.py --stage all --data logs --out results_d --backend hf --model Qwen/Qwen2.5-3B-Instruct
-python ModuleD.py --stage evaluate --out results_d
-python Dencoder.py --data logs --out results_d
-```
-
-**Status:** pipeline complete; no results from real generations yet. `results_mock/` contains outputs of a smoke test that used
-placeholder embedders and a fake generator to check the code runs. **They have no scientific meaning and must not be read as results.**
-
-### E – Document-level AI-content quantification
-*Notebook:* `task_E/E_document_level_ai.ipynb`
-
-1. **Answer key:** a word of the final text is "AI" if it lies in a run of at least 3 consecutive words shared with the LLM draft (`difflib`). Control texts get 0%.
-2. **Scoring:** Module C's classifier scores each sentence; a sentence is AI if its probability is at least 0.8. The main document score is the **length-weighted share of AI sentences** (chosen before looking at results).
-3. **No leakage:** only the 12 validation and 24 test participants are scored (the classifier trained on the other 45).
-4. **Calibration:** a straight line fitted on the 12 validation participants (`true% = −10.7 + 1.09 × predicted%`), applied to the 24 test participants. 95% intervals from 1,000 participant-level bootstraps.
-5. **Extra check (section 10):** the classifier separates "copied" from "rewritten" sentences in post-edited text with AUROC 0.937 (770 copied, 89 rewritten sentences; 30% of rewritten sentences are still flagged as AI).
-
-Error is small for lightly edited documents (about 4 points when over 95% of the text is from the draft) and large for heavily
-edited ones (about 23 points when under 50%, only 9 test documents). Raw scores are slightly better than calibrated ones on post-edited
-text; calibration mainly reduces over-flagging of human-only text (error 19.2 → 13.9). Treat the % as a rough estimate, not as proof of AI use.
-
-
-## Limitations
-
-- One dataset (81 participants), one LLM (GPT-o4-mini) and a small set of writing tasks.
-- A1 uses LUAR-CRUD with 60-word chunks; A2 and A3 use LUAR-MUD. Style profiles are built differently (averaged vectors in A1, concatenated text in A3).
-- A3's headline number is computed on the 57-participant fit set.
-- B: new-user performance is close to chance; the lexicon was built from the released data and should be built fold-wise for a strict evaluation (`B.py --exclude-pids`).
-- C: false alarms on human text (about 22%) and no test on other LLMs.
-- E: the answer key is a copy-overlap proxy, and most documents are 85% or more AI, so the range of true values is narrow.
-- D: no results from real generations yet.
-- Planned in our project proposal but **not implemented**: voice/prosody-informed style capture (Module F) and the keystroke edit-process logger and analysis (Module G).
-
-## Reference
-
-Baumler, C., Bao, C., Nghiem, H., Yang, X., Carpuat, M., and Daumé III, H. (2026).
-*Can You Make It Sound Like You? Post-Editing LLM-Generated Text for Personal Style.*
-Proceedings of the 64th Annual Meeting of the ACL, pp. 43867–43895.
-Dataset: <https://github.com/ctbaumler/personal_style_postedit>
